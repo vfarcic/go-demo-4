@@ -1,0 +1,79 @@
+import java.text.SimpleDateFormat
+
+
+pipeline {
+    agent {
+        kubernetes {
+            label "builder-pod-${UUID.randomUUID().toString()}"
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: builder-pod
+spec:
+  containers:
+  - name: helm
+    image: vfarcic/helm:2.8.2
+    command:
+    - cat
+    tty: true
+  - name: go
+    image: golang:1.10
+    command:
+    - cat
+    tty: true
+  - name: git
+    image: alpine/git
+    command:
+    - cat
+    tty: true
+  - name: docker
+    image: docker
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - mountPath: /var/run/docker.sock
+      name: docker-sock-volume
+  volumes:
+  - name: docker-sock-volume
+    hostPath:
+      path: /var/run/docker.sock
+      type: File
+"""
+        }
+    }
+
+    options {
+        timeout(time: 45, unit: 'MINUTES')
+    }
+
+    environment {
+        GH_USER="tigran10" // Replace me
+        DH_USER="digitalinside" // Replace me
+        PROJECT="go-demo-4"
+    }
+
+    stages {
+        stage("prep") {
+            steps {
+                script {
+                    env.GIT_COMMIT = sh (script: """ git rev-parse HEAD """, returnStdout: true).trim()
+                    env.shortGitCommit = "${env.GIT_COMMIT[0..10]}"
+                    currentBuild.displayName = new SimpleDateFormat("yy.MM.dd").format(new Date()) + "-" + env.BUILD_NUMBER
+                }
+            }
+        }
+
+
+        stage('build') {
+            steps {
+                container('docker') {
+                    k8sBuildImageBeta(props.image)
+                }
+            }
+        }
+    }
+}
