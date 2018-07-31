@@ -46,6 +46,15 @@ spec:
         }
     }
 
+    parameters {
+        string(name: 'project', defaultValue: 'go-demo-4')
+        string(name: 'image', defaultValue: 'digitalinside/go-demo-4')
+        string(name: 'domain', defaultValue: '10.217.32.221.nip.io')
+        string(name: 'addr', defaultValue: 'go-demo-4.10.217.32.221.nip.io')
+        string(name: 'cmAddr', defaultValue: 'cm.4.10.217.32.221.nip.io')
+        string(name: 'chartVer', defaultValue: '0.0.1')
+    }
+
     options {
         timeout(time: 45, unit: 'MINUTES')
     }
@@ -71,7 +80,7 @@ spec:
         stage('build') {
             steps {
                 container('docker') {
-                    ciK8sBuildImage(props.image)
+                    ciK8sBuildImage(params.image)
                 }
             }
         }
