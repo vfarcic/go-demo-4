@@ -71,7 +71,7 @@ spec:
         stage('build') {
             steps {
                 container('docker') {
-                    k8sBuildImageBeta(props.image)
+                    ciK8sBuildImage(props.image)
                 }
             }
         }
