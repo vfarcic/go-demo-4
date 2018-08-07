@@ -79,8 +79,13 @@ spec:
 
         stage('build') {
             steps {
+                container('git') {
+                    script {
+                        env.BUILD_TAG = ciVersionRead()
+                    }
+                }
                 container('docker') {
-                    ciK8sBuildImage(params.image, false, [env.shortGitCommit])
+                    ciK8sBuildImage(params.image, false, env.BUILD_TAG, [env.shortGitCommit])
                 }
             }
         }
@@ -88,7 +93,7 @@ spec:
         stage("func-test") {
             steps {
                 container("helm") {
-                    ciK8sUpgradeBeta(params.project, params.domain)
+                    ciK8sUpgradeBeta(params.project, params.domain, env.BUILD_TAG)
                 }
 
                 container("kubectl") {
@@ -96,7 +101,7 @@ spec:
                 }
 
                 container("golang") {
-                    ciK8sFuncTestGolang(params.project, params.domain)
+                    k8sFuncTestGolang(params.project, params.domain)
                 }
             }
 
