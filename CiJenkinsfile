@@ -85,7 +85,7 @@ spec:
                     }
                 }
                 container('docker') {
-                    ciK8sBuildImage(params.image, false, env.BUILD_TAG, [env.shortGitCommit])
+                    ciK8sBuildImage(params.image, false, env.BUILD_TAG)
                 }
             }
         }
