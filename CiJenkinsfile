@@ -80,7 +80,7 @@ spec:
         stage('build') {
             steps {
                 container('docker') {
-                    ciK8sBuildImage(params.image)
+                    ciK8sBuildImage(params.image, false)
                 }
             }
         }
