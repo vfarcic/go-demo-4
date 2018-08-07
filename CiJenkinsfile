@@ -48,7 +48,7 @@ spec:
 
     parameters {
         string(name: 'project', defaultValue: 'go-demo-3')
-        string(name: 'image', defaultValue: 'digitalinside/go-demo-4')
+        string(name: 'image', defaultValue: 'digitalinside/go-demo-3')
         string(name: 'domain', defaultValue: '10.217.32.221.nip.io')
         string(name: 'addr', defaultValue: 'go-demo-4.10.217.32.221.nip.io')
         string(name: 'cmAddr', defaultValue: 'cm.4.10.217.32.221.nip.io')
