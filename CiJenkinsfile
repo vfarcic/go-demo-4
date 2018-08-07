@@ -84,5 +84,29 @@ spec:
                 }
             }
         }
+
+        stage("func-test") {
+            steps {
+                container("helm") {
+                    ciK8sUpgradeBeta(params.project, params.domain)
+                }
+
+                container("kubectl") {
+                    k8sRolloutBeta(params.project)
+                }
+
+                container("golang") {
+                    ciK8sFuncTestGolang(params.project, params.domain)
+                }
+            }
+
+            post {
+                always {
+                    container("helm") {
+                        k8sDeleteBeta(props.project)
+                    }
+                }
+            }
+        }
     }
 }
