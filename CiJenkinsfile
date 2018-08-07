@@ -82,6 +82,7 @@ spec:
                 container('git') {
                     script {
                         env.BUILD_TAG = ciVersionRead()
+                        echo "build tag set to: ${env.BUILD_TAG}"
                     }
                 }
                 container('docker') {
