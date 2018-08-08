@@ -134,8 +134,8 @@ spec:
                 script {
                     timeout(time: 10, unit: 'MINUTES') {
                         input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
-
                         sh "DEPLOYED TO UAT"
+                        sh "git tag -a ${env.BUILD_TAG} ${env.GIT_COMMIT} -m \"Message here\""
                     }
                 }
             }
