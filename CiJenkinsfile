@@ -133,7 +133,7 @@ spec:
             steps {
                 timeout(time: 1, unit: 'MINUTES') {
                     input message: "Keep deployment alive ?"
-                    eecho "remember to delete resources"
+                    echo "remember to delete resources"
                 }
             }
 
