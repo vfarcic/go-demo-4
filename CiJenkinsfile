@@ -112,7 +112,7 @@ spec:
             }
         }
 
-        stage ("latest master tag") {
+        stage ("latest master tags") {
             when {
                 branch "master"
             }
@@ -120,6 +120,35 @@ spec:
             steps {
                 container('docker') {
                     ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}"])
+                }
+            }
+        }
+
+        stage ("latest master tags") {
+            when {
+                branch "master"
+            }
+
+            steps {
+                container('docker') {
+                    ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}"])
+                }
+            }
+        }
+
+
+        stage ("deploy/no-deploy") {
+            when {
+                branch "master"
+            }
+
+            steps {
+                script {
+                    timeout(time: 10, unit: 'MINUTES') {
+                        input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+
+                        sh "DEPLOYED TO UAT"
+                    }
                 }
             }
         }
@@ -139,12 +168,14 @@ spec:
                     try {
                         // change to a convenient timeout for you
                         timeout(time: 1, unit: 'MINUTES') {
-                            input message: "Keep deployment alive ?"
-                            echo "remember to delete resources"
+                            input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
+                            echo "remember to delete resources "
                             echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
                         }
                     } catch(err) {
-                        k8sDeleteBeta(params.project)
+                        container('helm') {
+                            k8sDeleteBeta(params.project)
+                        }
                     }
                 }
 
