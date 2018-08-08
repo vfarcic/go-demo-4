@@ -96,13 +96,11 @@ spec:
                 }
 
                 container("kubectl") {
-                    echo "rollout"
-//                    k8sRolloutBeta(params.project)
+                    k8sRolloutBeta(params.project)
                 }
 
                 container("golang") {
-                    echo "func tests"
-//                    k8sFuncTestGolang(params.project, params.domain)
+                    k8sFuncTestGolang(params.project, params.domain)
                 }
             }
 
@@ -131,20 +129,18 @@ spec:
             }
 
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
-                    input message: "Keep deployment alive ?"
-                    echo "remember to delete resources"
-                }
-            }
-
-            post {
-                failure {
-                    script{
+                script {
+                    try {
+                        // change to a convenient timeout for you
+                        timeout(time: 1, unit: 'MINUTES') {
+                            input message: "Keep deployment alive ?"
+                            echo "remember to delete resources"
+                        }
+                    } catch(err) {
                         k8sDeleteBeta(params.project)
-                        currentBuild.result = 'SUCCESS'
                     }
-
                 }
+
             }
         }
 
