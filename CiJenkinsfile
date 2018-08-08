@@ -53,20 +53,14 @@ spec:
     parameters {
         string(name: 'project', defaultValue: 'go-demo-3')
         string(name: 'image', defaultValue: 'digitalinside/go-demo-3')
-        string(name: 'domain', defaultValue: '10.217.32.221.nip.io')
-        string(name: 'addr', defaultValue: 'go-demo-4.10.217.32.221.nip.io')
-        string(name: 'cmAddr', defaultValue: 'cm.4.10.217.32.221.nip.io')
+        string(name: 'domain', defaultValue: '192.168.0.10.nip.io')
+        string(name: 'addr', defaultValue: 'go-demo-3.192.168.0.10.nip.io')
+        string(name: 'cmAddr', defaultValue: 'cm.4.192.168.0.10.nip.io')
         string(name: 'chartVer', defaultValue: '0.0.1')
     }
 
     options {
         timeout(time: 45, unit: 'MINUTES')
-    }
-
-    environment {
-        GH_USER="tigran10" // Replace me
-        DH_USER="digitalinside" // Replace me
-        PROJECT="go-demo-4"
     }
 
     stages {
@@ -102,21 +96,53 @@ spec:
                 }
 
                 container("kubectl") {
-                    k8sRolloutBeta(params.project)
+                    echo "rollout"
+//                    k8sRolloutBeta(params.project)
                 }
 
                 container("golang") {
-                    k8sFuncTestGolang(params.project, params.domain)
+                    echo "func tests"
+//                    k8sFuncTestGolang(params.project, params.domain)
+                }
+            }
+
+        }
+
+        stage ("latest master tag") {
+            when {
+                branch "master"
+            }
+
+            steps {
+                container('docker') {
+                    ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}"])
+                }
+            }
+        }
+
+        stage ("clean up") {
+            when {
+                not {
+                    anyOf {
+                        branch "master"
+                        branch "hotfix-*"
+                    }
+                }
+            }
+
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    input message: "Keep deployment alive ?"
+                    eecho "remember to delete resources"
                 }
             }
 
             post {
-                always {
-                    container("helm") {
-                        k8sDeleteBeta(params.project)
-                    }
+                failure {
+                    k8sDeleteBeta(params.project)
                 }
             }
         }
+
     }
 }
