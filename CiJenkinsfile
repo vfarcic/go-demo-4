@@ -140,6 +140,7 @@ spec:
             post {
                 failure {
                     k8sDeleteBeta(params.project)
+                    currentBuild.result = 'SUCCESS'
                 }
             }
         }
