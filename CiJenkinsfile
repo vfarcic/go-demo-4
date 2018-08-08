@@ -103,6 +103,11 @@ spec:
                 }
             }
 
+            post {
+                failure {
+                    k8sDeleteBeta(params.project)
+                }
+            }
         }
 
         stage ("latest master tag") {
