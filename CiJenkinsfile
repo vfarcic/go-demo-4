@@ -141,6 +141,7 @@ spec:
                         timeout(time: 1, unit: 'MINUTES') {
                             input message: "Keep deployment alive ?"
                             echo "remember to delete resources"
+                            echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
                         }
                     } catch(err) {
                         k8sDeleteBeta(params.project)
