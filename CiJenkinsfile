@@ -19,10 +19,9 @@ spec:
     command:
     - cat
     tty: true
-  - name: go
-    image: golang:1.10
-    command:
-    - cat
+  - name: golang
+    image: golang:1.9
+    command: ["cat"]
     tty: true
   - name: git
     image: alpine/git
