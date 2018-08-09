@@ -67,8 +67,13 @@ spec:
             steps {
                 script {
                     //https://issues.jenkins-ci.org/browse/JENKINS-52623 i found issue and waiting it to be fixed, i think carlos is on it now
-                    env.GIT_COMMIT = sh (script: """ git rev-parse HEAD """, returnStdout: true).trim()
-                    env.shortGitCommit = "${env.GIT_COMMIT[0..10]}"
+                    container('git') {
+                        env.GIT_COMMIT = sh (script: """ git rev-parse HEAD """, returnStdout: true).trim()
+                        env.shortGitCommit = "${env.GIT_COMMIT[0..10]}"
+                        env.BUILD_TAG = ciBuildVersionRead()
+                        echo "build tag set to: ${env.BUILD_TAG}"
+                    }
+
                     currentBuild.displayName = new SimpleDateFormat("yy.MM.dd").format(new Date()) + "-" + env.BUILD_NUMBER
                 }
             }
@@ -77,13 +82,8 @@ spec:
 
         stage('build') {
             steps {
-                container('git') {
-                    script {
-                        env.BUILD_TAG = ciBuildVersionRead()
-                        echo "build tag set to: ${env.BUILD_TAG}"
-                    }
-                }
                 container('docker') {
+                    //for feature branch
                     ciK8sBuildImage(params.image, false, env.BUILD_TAG)
                 }
             }
@@ -124,15 +124,29 @@ spec:
 
             steps {
                 script {
-                    timeout(time: 10, unit: 'MINUTES') {
-                        input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+                    try {
+                        timeout(time: 2, unit: 'MINUTES') {
+                            input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
 
-                        container('docker') {
-                            ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", ciVersionRead() ])
+
+                            //better docker tag
+                            container('docker') {
+                                ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", ciVersionRead() ])
+                            }
+
+                            //tag git
+                            container('git') {
+                                tagGitRelease(ciVersionRead())
+                            }
                         }
-
-                        tagGitRelease(ciVersionRead())
                     }
+
+                    catch(err) {
+                        container('helm') {
+                            k8sDeleteBeta(params.project)
+                        }
+                    }
+
                 }
             }
         }
