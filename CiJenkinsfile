@@ -1,0 +1,193 @@
+import java.text.SimpleDateFormat
+
+
+pipeline {
+    agent {
+        kubernetes {
+            label "builder-pod-${UUID.randomUUID().toString()}"
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: builder-pod
+spec:
+  containers:
+  - name: helm
+    image: vfarcic/helm:2.8.2
+    command:
+    - cat
+    tty: true
+  - name: golang
+    image: golang:1.9
+    command: ["cat"]
+    tty: true
+  - name: git
+    image: alpine/git
+    command:
+    - cat
+    tty: true
+  - name: git
+    image: digitalinside/gren:latest
+    command:
+    - cat
+    tty: true    
+  - name: kubectl
+    image: vfarcic/kubectl
+    command: ["cat"]
+    tty: true
+  - name: docker
+    image: docker
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - mountPath: /var/run/docker.sock
+      name: docker-sock-volume
+  volumes:
+  - name: docker-sock-volume
+    hostPath:
+      path: /var/run/docker.sock
+      type: File
+"""
+        }
+    }
+
+    parameters {
+        string(name: 'project', defaultValue: 'go-demo-3')
+        string(name: 'image', defaultValue: 'digitalinside/go-demo-3')
+        string(name: 'domain', defaultValue: '192.168.0.10.nip.io')
+        string(name: 'addr', defaultValue: 'go-demo-3.192.168.0.10.nip.io')
+        string(name: 'cmAddr', defaultValue: 'cm.4.192.168.0.10.nip.io')
+        string(name: 'chartVer', defaultValue: '0.0.1')
+    }
+
+    options {
+        timeout(time: 45, unit: 'MINUTES')
+    }
+
+    stages {
+        stage("prep") {
+            steps {
+                script {
+                    //https://issues.jenkins-ci.org/browse/JENKINS-52623 i found issue and waiting it to be fixed, i think carlos is on it now
+                    container('git') {
+                        env.GIT_COMMIT = sh (script: """ git rev-parse HEAD """, returnStdout: true).trim()
+                        env.shortGitCommit = "${env.GIT_COMMIT[0..10]}"
+                        env.BUILD_TAG = ciBuildVersionRead()
+                        echo "build tag set to: ${env.BUILD_TAG}"
+                    }
+
+                    currentBuild.displayName = new SimpleDateFormat("yy.MM.dd").format(new Date()) + "-" + env.BUILD_NUMBER
+                }
+            }
+        }
+
+
+        stage('build') {
+            steps {
+                container('docker') {
+                    //for feature branch
+                    ciK8sBuildImage(params.image, false, env.BUILD_TAG)
+                }
+            }
+        }
+
+        stage("func-test") {
+            steps {
+                container("helm") {
+                    ciK8sUpgradeBeta(params.project, params.domain, env.BUILD_TAG)
+                }
+
+                container("kubectl") {
+                    k8sRolloutBeta(params.project)
+                }
+
+                container("golang") {
+                    ciK8sFuncTestGolang(params.project, params.domain)
+                }
+            }
+
+            post {
+                failure {
+                    container("helm") {
+                        k8sDeleteBeta(params.project)
+                    }
+                }
+            }
+        }
+
+
+        stage ("deploy2uat") {
+            when {
+                anyOf {
+                    branch "master"
+                    branch "hotfix-*"
+                }
+            }
+
+            steps {
+                script {
+                    try {
+
+                        //agree on release tag
+                        env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
+
+                        timeout(time: 2, unit: 'MINUTES') {
+                            input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+
+
+                            //docker tag
+                            container('docker') {
+                                ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG ])
+                            }
+
+                            //git tag
+                            container('git') {
+                                ciTagGitRelease(env.RELEASE_TAG)
+                            }
+                        }
+                    }
+
+                    catch(err) {
+                        container('helm') {
+                            k8sDeleteBeta(params.project)
+                        }
+                    }
+
+                }
+            }
+        }
+
+        stage ("clean up") {
+            when {
+                not {
+                    anyOf {
+                        branch "master"
+                        branch "hotfix-*"
+                    }
+                }
+            }
+
+            steps {
+                script {
+                    try {
+                        // change to a convenient timeout for you
+                        timeout(time: 1, unit: 'MINUTES') {
+                            input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
+                            echo "remember to delete resources "
+                            echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
+                        }
+                    } catch(err) {
+                        container('helm') {
+                            k8sDeleteBeta(params.project)
+                        }
+                    }
+                }
+
+            }
+        }
+
+    }
+}
