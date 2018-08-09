@@ -140,7 +140,7 @@ spec:
 
                             //git tag
                             container('git') {
-                                tagGitRelease(env.RELEASE_TAG)
+                                ciTagGitRelease(env.RELEASE_TAG)
                             }
                         }
                     }
