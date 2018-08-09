@@ -129,40 +129,28 @@ spec:
 
             steps {
                 script {
-                    try {
+                    env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
 
-                        //agree on release tag
-                        env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
+                    ciDeleteAfterTimingOut(2, 'MINUTES') {
+                        input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
 
-                        timeout(time: 2, unit: 'MINUTES') {
-                            input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+                        //docker tag
+                        container('docker') {
+                            ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG ])
+                        }
 
+                        //git tag
+                        container('git') {
+                            ciTagGitRelease(env.RELEASE_TAG)
+                        }
 
-                            //docker tag
-                            container('docker') {
-                                ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG ])
+                        container('gren') {
+                            withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+                                sh "gren release --token=${TOKEN}"
                             }
 
-                            //git tag
-                            container('git') {
-                                ciTagGitRelease(env.RELEASE_TAG)
-                            }
-
-                            container('gren') {
-                                withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
-                                    sh "gren release --token=${TOKEN}"
-                                }
-
-                            }
                         }
                     }
-
-                    catch(err) {
-                        container('helm') {
-                            k8sDeleteBeta(params.project)
-                        }
-                    }
-
                 }
             }
         }
