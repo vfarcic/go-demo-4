@@ -73,7 +73,7 @@ spec:
                 script {
                     //https://issues.jenkins-ci.org/browse/JENKINS-52623 i found issue and waiting it to be fixed, i think carlos is on it now
                     container('git') {
-                        env.GIT_COMMIT = sh (script: """ git rev-parse HEAD """, returnStdout: true).trim()
+                        env.GIT_COMMIT = sh(script: """ git rev-parse HEAD """, returnStdout: true).trim()
                         env.shortGitCommit = "${env.GIT_COMMIT[0..10]}"
                         env.BUILD_TAG = ciBuildVersionRead()
                         echo "build tag set to: ${env.BUILD_TAG}"
@@ -119,7 +119,7 @@ spec:
         }
 
 
-        stage ("deploy2uat") {
+        stage("deploy2uat") {
             when {
                 anyOf {
                     branch "master"
@@ -129,14 +129,16 @@ spec:
 
             steps {
                 script {
-                    env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
+                    container("git") {
+                        env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
+                    }
 
                     ciDeleteAfterTimingOut(2, 'MINUTES') {
                         input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
 
                         //docker tag
                         container('docker') {
-                            ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG ])
+                            ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG])
                         }
 
                         //git tag
@@ -148,14 +150,13 @@ spec:
                             withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
                                 sh "gren release --token=${TOKEN}"
                             }
-
                         }
                     }
                 }
             }
         }
 
-        stage ("clean up") {
+        stage("clean up") {
             when {
                 not {
                     anyOf {
@@ -174,7 +175,7 @@ spec:
                             echo "remember to delete resources "
                             echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
                         }
-                    } catch(err) {
+                    } catch (err) {
                         container('helm') {
                             k8sDeleteBeta(params.project)
                         }
