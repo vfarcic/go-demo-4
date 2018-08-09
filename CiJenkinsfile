@@ -28,6 +28,11 @@ spec:
     command:
     - cat
     tty: true
+  - name: git
+    image: digitalinside/gren:latest
+    command:
+    - cat
+    tty: true    
   - name: kubectl
     image: vfarcic/kubectl
     command: ["cat"]
