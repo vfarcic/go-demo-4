@@ -131,7 +131,7 @@ spec:
                             ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", ciVersionRead() ])
                         }
 
-                        tagGitRelease(env.BUILD_TAG)
+                        tagGitRelease(ciVersionRead())
                     }
                 }
             }
