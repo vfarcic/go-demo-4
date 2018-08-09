@@ -134,14 +134,19 @@ spec:
                 script {
                     timeout(time: 10, unit: 'MINUTES') {
                         input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+                        withCredentials([sshUserPrivateKey(credentialsId: 'TM_RSA', keyFileVariable: 'SSH_KEY')]) {
+                            sh 'echo ssh -i $SSH_KEY -l git -o StrictHostKeyChecking=no \\"\\$@\\" > local_ssh.sh'
+                            sh 'chmod +x local_ssh.sh'
+                            withEnv(['GIT_SSH=local_ssh.sh']) {
 
-                        echo "DEPLOYED TO UAT"
+                                //ugly, but could not make it work globally... jenkins sometimes makes me hate my life
+                                sh """ git config --global user.email "tigran@mna.com" """
+                                sh """ git config --global user.name "Tigran Mna" """
 
-                        sh """ git config --global user.email "tigran@mna.com" """
-                        sh """ git config --global user.name "Tigran Mna" """
-
-                        sh "git tag -a ${env.BUILD_TAG} ${env.GIT_COMMIT} -m \"Message here\""
-                        sh "git push origin ${env.BUILD_TAG} "
+                                sh "git tag -a ${env.BUILD_TAG} ${env.GIT_COMMIT}"
+                                sh "git push origin ${env.BUILD_TAG} "
+                            }
+                        }
                     }
                 }
             }
