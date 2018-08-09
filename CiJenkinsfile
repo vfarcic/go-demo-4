@@ -141,7 +141,7 @@ spec:
                         sh """ git config --global user.name "Tigran Mna" """
 
                         sh "git tag -a ${env.BUILD_TAG} ${env.GIT_COMMIT} -m \"Message here\""
-                        sh "git push --tags origin master"
+                        sh "git push origin ${env.BUILD_TAG} "
                     }
                 }
             }
