@@ -66,6 +66,7 @@ spec:
         stage("prep") {
             steps {
                 script {
+                    //https://issues.jenkins-ci.org/browse/JENKINS-52623 i found issue and waiting it to be fixed, i think carlos is on it now
                     env.GIT_COMMIT = sh (script: """ git rev-parse HEAD """, returnStdout: true).trim()
                     env.shortGitCommit = "${env.GIT_COMMIT[0..10]}"
                     currentBuild.displayName = new SimpleDateFormat("yy.MM.dd").format(new Date()) + "-" + env.BUILD_NUMBER
@@ -78,7 +79,7 @@ spec:
             steps {
                 container('git') {
                     script {
-                        env.BUILD_TAG = ciVersionRead()
+                        env.BUILD_TAG = ciBuildVersionRead()
                         echo "build tag set to: ${env.BUILD_TAG}"
                     }
                 }
@@ -112,28 +113,24 @@ spec:
             }
         }
 
-        stage ("latest master tags") {
-            when {
-                branch "master"
-            }
-
-            steps {
-                container('docker') {
-                    ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}"])
-                }
-            }
-        }
-
 
         stage ("deploy2uat") {
             when {
-                branch "master"
+                anyOf {
+                    branch "master"
+                    branch "hotfix-*"
+                }
             }
 
             steps {
                 script {
                     timeout(time: 10, unit: 'MINUTES') {
                         input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+
+                        container('docker') {
+                            ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", ciVersionRead() ])
+                        }
+
                         tagGitRelease(env.BUILD_TAG)
                     }
                 }
