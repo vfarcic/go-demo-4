@@ -28,7 +28,7 @@ spec:
     command:
     - cat
     tty: true
-  - name: git
+  - name: gren
     image: digitalinside/gren:latest
     command:
     - cat
@@ -146,6 +146,13 @@ spec:
                             //git tag
                             container('git') {
                                 ciTagGitRelease(env.RELEASE_TAG)
+                            }
+
+                            container('gren') {
+                                withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+                                    sh "gren release --token=${TOKEN}"
+                                }
+
                             }
                         }
                     }
