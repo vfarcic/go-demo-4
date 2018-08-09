@@ -100,7 +100,7 @@ spec:
                 }
 
                 container("golang") {
-                    k8sFuncTestGolang(params.project, params.domain)
+                    ciK8sFuncTestGolang(params.project, params.domain)
                 }
             }
 
@@ -125,18 +125,22 @@ spec:
             steps {
                 script {
                     try {
+
+                        //agree on release tag
+                        env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
+
                         timeout(time: 2, unit: 'MINUTES') {
                             input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
 
 
-                            //better docker tag
+                            //docker tag
                             container('docker') {
-                                ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", ciVersionRead() ])
+                                ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG ])
                             }
 
-                            //tag git
+                            //git tag
                             container('git') {
-                                tagGitRelease(ciVersionRead())
+                                tagGitRelease(env.RELEASE_TAG)
                             }
                         }
                     }
