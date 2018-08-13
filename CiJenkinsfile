@@ -125,7 +125,7 @@ spec:
                     }
 
                     ciDeleteAfterTimingOut(2, 'MINUTES') {
-                        input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+                        env.userInput = input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
 
                         //docker tag
                         container('docker') {
