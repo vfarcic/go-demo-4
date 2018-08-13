@@ -127,7 +127,7 @@ spec:
                     // you can have your master builds running for some time until someone decides to promote it.
                     // better to autodelete the deployment when it times out
                     ciDeleteAfterTimingOut(2, 'MINUTES') {
-                        env.userInput = input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+                        env.userInput = input(id: "Deploy Gate", message: "Deploy ${params.project} to UAT?", ok: 'Deploy')
 
 
 //                        ######### untested for now  #########
@@ -185,7 +185,8 @@ spec:
                     // this will delete feature branch deployments, unless someone wants to keep it running
                     // later it should be deleted manually, or with PR merge hook
                     ciDeleteAfterTimingOut(1, 'MINUTES') {
-                        env.userInput = input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
+                        env.userInput = input(id: "delete deployment", message: "Delete ${env.BRANCH_NAME} deployment?", ok: 'Delete')
+                        ciK8sDeleteBeta(params.project)
                     }
                 }
 
