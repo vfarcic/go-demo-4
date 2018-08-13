@@ -68,25 +68,15 @@ spec:
     }
 
     stages {
-        stage("prep") {
-            steps {
-                script {
-                    //https://issues.jenkins-ci.org/browse/JENKINS-52623 i found issue and waiting it to be fixed, i think carlos is on it now
-                    container('git') {
-                        env.GIT_COMMIT = sh(script: """ git rev-parse HEAD """, returnStdout: true).trim()
-                        env.shortGitCommit = "${env.GIT_COMMIT[0..10]}"
-                        env.BUILD_TAG = ciBuildVersionRead()
-                        echo "build tag set to: ${env.BUILD_TAG}"
-                    }
-
-                    currentBuild.displayName = new SimpleDateFormat("yy.MM.dd").format(new Date()) + "-" + env.BUILD_NUMBER
-                }
-            }
-        }
-
 
         stage('build') {
             steps {
+                ciPrettyBuildNumber()
+
+                container('git') {
+                    ciBuildEnvVars()
+                }
+
                 container('docker') {
                     //for feature branch
                     ciK8sBuildImage(params.image, false, env.BUILD_TAG)
@@ -147,6 +137,7 @@ spec:
                         }
 
                         container('gren') {
+                            //https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
                             withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
                                 sh "gren release --token=${TOKEN}"
                             }
@@ -172,7 +163,7 @@ spec:
                         // change to a convenient timeout for you
                         timeout(time: 1, unit: 'MINUTES') {
                             input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
-                            echo "remember to delete resources "
+                            echo "remember to delete resources: run the command below"
                             echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
                         }
                     } catch (err) {
