@@ -90,7 +90,7 @@ spec:
                 }
 
                 container("kubectl") {
-                    k8sRolloutBeta(params.project)
+                    ciK8sRolloutBeta(params.project)
                 }
 
                 container("golang") {
