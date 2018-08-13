@@ -1,6 +1,3 @@
-import java.text.SimpleDateFormat
-
-
 pipeline {
     agent {
         kubernetes {
@@ -74,7 +71,9 @@ spec:
                 ciPrettyBuildNumber()
 
                 container('git') {
-                    ciBuildEnvVars()
+                    ciWithGitKey('TM_RSA') {
+                        ciBuildEnvVars()
+                    }
                 }
 
                 container('docker') {
@@ -102,7 +101,7 @@ spec:
             post {
                 failure {
                     container("helm") {
-                        k8sDeleteBeta(params.project)
+                        ciK8sDeleteBeta(params.project)
                     }
                 }
             }
@@ -125,8 +124,27 @@ spec:
                         }
                     }
 
+                    // you can have your master builds running for some time until someone decides to promote it.
+                    // better to autodelete the deployment when it times out
                     ciDeleteAfterTimingOut(2, 'MINUTES') {
-                        input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+                        env.userInput = input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
+
+
+//                        ######### untested for now  #########
+
+//                        container("helm") {
+//                            k8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr)
+//                        }
+//                        container("helm") {
+//                            ciK8sUpgrade(props.project, props.addr, "${project}-uat")
+//                        }
+//                        container("kubectl") {
+//                            ciK8sRollout(props.project, "${project}-uat")
+//                        }
+//                        container("golang") {
+//                            k8sUatTestGolang(props.addr)
+//                        }
+//                       ##################
 
                         //docker tag
                         container('docker') {
@@ -163,17 +181,16 @@ spec:
 
             steps {
                 script {
-                    try {
-                        // change to a convenient timeout for you
-                        timeout(time: 1, unit: 'MINUTES') {
-                            input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
-                            echo "remember to delete resources: run the command below"
-                            echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
-                        }
-                    } catch (err) {
-                        container('helm') {
-                            k8sDeleteBeta(params.project)
-                        }
+
+                    // this will delete feature branch deployments, unless someone wants to keep it running
+                    // later it should be deleted manually, or with PR merge hook
+                    ciDeleteAfterTimingOut(2, 'MINUTES') {
+                        env.userInput = // change to a convenient timeout for you
+                                timeout(time: 1, unit: 'MINUTES') {
+                                    input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
+                                    echo "remember to delete resources later: run the command below"
+                                    echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
+                                }
                     }
                 }
 
