@@ -120,7 +120,9 @@ spec:
             steps {
                 script {
                     container("git") {
-                        env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
+                        ciWithGitKey('TM_RSA') {
+                            env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
+                        }
                     }
 
                     ciDeleteAfterTimingOut(2, 'MINUTES') {
@@ -133,7 +135,9 @@ spec:
 
                         //git tag
                         container('git') {
-                            ciTagGitRelease(env.RELEASE_TAG)
+                            ciWithGitKey('TM_RSA') {
+                                ciTagGitRelease(env.RELEASE_TAG)
+                            }
                         }
 
                         container('gren') {
