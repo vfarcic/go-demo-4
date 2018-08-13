@@ -129,6 +129,23 @@ spec:
                     ciDeleteAfterTimingOut(2, 'MINUTES') {
                         env.userInput = input(id: "Deploy Gate", message: "Deploy ${params.project}?", ok: 'Deploy')
 
+
+//                        ######### untested for now  #########
+
+//                        container("helm") {
+//                            k8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr)
+//                        }
+//                        container("helm") {
+//                            ciK8sUpgrade(props.project, props.addr, "${project}-uat")
+//                        }
+//                        container("kubectl") {
+//                            ciK8sRollout(props.project, "${project}-uat")
+//                        }
+//                        container("golang") {
+//                            k8sUatTestGolang(props.addr)
+//                        }
+//                       ##################
+
                         //docker tag
                         container('docker') {
                             ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG])
