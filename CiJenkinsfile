@@ -1,6 +1,3 @@
-import java.text.SimpleDateFormat
-
-
 pipeline {
     agent {
         kubernetes {
@@ -74,7 +71,9 @@ spec:
                 ciPrettyBuildNumber()
 
                 container('git') {
-                    ciBuildEnvVars()
+                    ciWithGitKey('TM_RSA') {
+                        ciBuildEnvVars()
+                    }
                 }
 
                 container('docker') {
