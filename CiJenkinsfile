@@ -184,7 +184,7 @@ spec:
 
                     // this will delete feature branch deployments, unless someone wants to keep it running
                     // later it should be deleted manually, or with PR merge hook
-                    ciDeleteAfterTimingOut(2, 'MINUTES') {
+                    ciDeleteAfterTimingOut(1, 'MINUTES') {
                         env.userInput = input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
                     }
                 }
