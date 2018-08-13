@@ -124,11 +124,11 @@ spec:
                         }
                     }
 
-                    // you can have your master builds running for some time until someone decides to promote it.
-                    // better to autodelete the deployment when it times out
-                    ciDeleteAfterTimingOut(2, 'MINUTES') {
-                        env.userInput = input(id: "Deploy Gate", message: "Deploy ${params.project} to UAT?", ok: 'Deploy')
-
+                    container("helm") {
+                        // you can have your master builds running for some time until someone decides to promote it.
+                        // better to autodelete the deployment when it times out
+                        ciDeleteAfterTimingOut(2, 'MINUTES') {
+                            env.userInput = input(id: "Deploy Gate", message: "Deploy ${params.project} to UAT?", ok: 'Deploy')
 
 //                        ######### untested for now  #########
 
@@ -146,25 +146,27 @@ spec:
 //                        }
 //                       ##################
 
-                        //docker tag
-                        container('docker') {
-                            ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG])
-                        }
-
-                        //git tag
-                        container('git') {
-                            ciWithGitKey('TM_RSA') {
-                                ciTagGitRelease(env.RELEASE_TAG)
+                            //docker tag
+                            container('docker') {
+                                ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG])
                             }
-                        }
 
-                        container('gren') {
-                            //https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
-                            withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
-                                sh "gren release --token=${TOKEN}"
+                            //git tag
+                            container('git') {
+                                ciWithGitKey('TM_RSA') {
+                                    ciTagGitRelease(env.RELEASE_TAG)
+                                }
+                            }
+
+                            container('gren') {
+                                //https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
+                                withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+                                    sh "gren release --token=${TOKEN}"
+                                }
                             }
                         }
                     }
+
                 }
             }
         }
@@ -182,12 +184,15 @@ spec:
             steps {
                 script {
 
-                    // this will delete feature branch deployments, unless someone wants to keep it running
-                    // later it should be deleted manually, or with PR merge hook
-                    ciDeleteAfterTimingOut(1, 'MINUTES') {
-                        env.userInput = input(id: "delete deployment", message: "Delete ${env.BRANCH_NAME} deployment?", ok: 'Delete')
-                        ciK8sDeleteBeta(params.project)
+                    container("helm") {
+                        // this will delete feature branch deployments, unless someone wants to keep it running
+                        // later it should be deleted manually, or with PR merge hook
+                        ciDeleteAfterTimingOut(1, 'MINUTES') {
+                            env.userInput = input(id: "delete deployment", message: "Delete ${env.BRANCH_NAME} deployment?", ok: 'Delete')
+                            ciK8sDeleteBeta(params.project)
+                        }
                     }
+
                 }
 
             }
