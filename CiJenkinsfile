@@ -185,12 +185,7 @@ spec:
                     // this will delete feature branch deployments, unless someone wants to keep it running
                     // later it should be deleted manually, or with PR merge hook
                     ciDeleteAfterTimingOut(2, 'MINUTES') {
-                        env.userInput = // change to a convenient timeout for you
-                                timeout(time: 1, unit: 'MINUTES') {
-                                    input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
-                                    echo "remember to delete resources later: run the command below"
-                                    echo "helm delete ${ciChartNameRead(params.project).toLowerCase()} --tiller-namespace ${params.project}-build --purge"
-                                }
+                        env.userInput = input(id: "Keep it", message: "Keep ${env.BRANCH_NAME} deployment?", ok: 'Keep')
                     }
                 }
 
