@@ -101,7 +101,7 @@ spec:
             post {
                 failure {
                     container("helm") {
-                        k8sDeleteBeta(params.project)
+                        ciK8sDeleteBeta(params.project)
                     }
                 }
             }
