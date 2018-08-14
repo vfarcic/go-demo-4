@@ -133,7 +133,7 @@ spec:
                     container("helm") {
                         // you can have your master builds running for some time until someone decides to promote it.
                         // better to autodelete the deployment when it times out
-                        ciDeleteAfterTimingOut(2, 'MINUTES') {
+                        ciDeleteAfterTimingOut(10, 'MINUTES') {
 
                             ciConditionalInputExecution("Deploy Gate",
                                     "Deploy ${params.project} to UAT?",
