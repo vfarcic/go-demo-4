@@ -58,6 +58,10 @@ spec:
         string(name: 'addr', defaultValue: 'go-demo-3.10.64.108.181.nip.io')
         string(name: 'cmAddr', defaultValue: 'cm.4.10.64.108.181.nip.io')
         string(name: 'chartVer', defaultValue: '0.0.1')
+
+        // new
+        string(name: 'rsaKey', defaultValue: 'TM_RSA')
+        string(name: 'githubToken', defaultValue: 'GITHUB_TOKEN')
     }
 
     options {
@@ -72,7 +76,7 @@ spec:
                 ciPrettyBuildNumber()
 
                 container('git') {
-                    ciWithGitKey('TM_RSA') {
+                    ciWithGitKey(params.rsaKey) {
                         ciBuildEnvVars()
                     }
                 }
@@ -109,7 +113,7 @@ spec:
         }
 
 
-        stage("deploy2uat") {
+        stage("Release & Deploy") {
             when {
                 anyOf {
                     branch "master"
@@ -120,7 +124,7 @@ spec:
             steps {
                 script {
                     container("git") {
-                        ciWithGitKey('TM_RSA') {
+                        ciWithGitKey(params.rsaKey) {
                             env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
                         }
                     }
@@ -142,14 +146,14 @@ spec:
 
                                 //git tag
                                 container('git') {
-                                    ciWithGitKey('TM_RSA') {
+                                    ciWithGitKey(params.rsaKey) {
                                         ciTagGitRelease(env.RELEASE_TAG)
                                     }
                                 }
 
                                 container('gren') {
                                     //https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
-                                    withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+                                    withCredentials([string(credentialsId: params.githubToken, variable: 'TOKEN')]) {
                                         sh "gren release --token=${TOKEN}"
                                     }
                                 }
