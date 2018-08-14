@@ -164,7 +164,7 @@ spec:
 
 
                                 container("helm") {
-                                    ciK8sUpgrade(props.project, params.uatAddr, "${project}-uat", env.BUILD_TAG)
+                                    ciK8sUpgrade(props.project, params.uatAddr, "${project}-uat", env.RELEASE_TAG)
                                 }
                                 container("kubectl") {
                                     ciK8sRollout(params.project, "${project}-uat")
