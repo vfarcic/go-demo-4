@@ -162,28 +162,27 @@ spec:
                 }
             }
         }
+    }
 
-        post {
-            always {
-                ciWhenNotReleaseBranches {
-                    container("helm") {
-                        // this will delete feature branch deployments, unless someone wants to keep it running
-                        // later it should be deleted manually, or with PR merge hook
-                        ciDeleteAfterTimingOut(1, 'MINUTES') {
+    post {
+        always {
+            ciWhenNotReleaseBranches {
+                container("helm") {
+                    // this will delete feature branch deployments, unless someone wants to keep it running
+                    // later it should be deleted manually, or with PR merge hook
+                    ciDeleteAfterTimingOut(1, 'MINUTES') {
 
-                            ciConditionalInputExecution("delete feature",
-                                    "delete feature deployment?",
-                                    "continue",
-                                    "delete deployment") {
-                                ciK8sDeleteBeta(params.project)
-                            }
-
+                        ciConditionalInputExecution("delete feature",
+                                "delete feature deployment?",
+                                "continue",
+                                "delete deployment") {
+                            ciK8sDeleteBeta(params.project)
                         }
+
                     }
                 }
             }
         }
-
     }
 }
 
