@@ -163,19 +163,9 @@ spec:
             }
         }
 
-        stage("clean up") {
-            when {
-                not {
-                    anyOf {
-                        branch "master"
-                        branch "hotfix-*"
-                    }
-                }
-            }
-
-            steps {
-                script {
-
+        post {
+            always {
+                ciWhenNotReleaseBranches {
                     container("helm") {
                         // this will delete feature branch deployments, unless someone wants to keep it running
                         // later it should be deleted manually, or with PR merge hook
@@ -190,9 +180,7 @@ spec:
 
                         }
                     }
-
                 }
-
             }
         }
 
