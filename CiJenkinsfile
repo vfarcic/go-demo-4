@@ -158,6 +158,7 @@ spec:
                                     }
                                 }
 
+// my local cm is in a bad state :)
 //                              container("helm") {
 //                                  k8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr)
 //                              }
@@ -204,11 +205,3 @@ spec:
         }
     }
 }
-
-
-//todo
-//                        ######### untested for now  #########
-
-
-
-//                       ##################
