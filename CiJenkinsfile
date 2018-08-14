@@ -129,7 +129,9 @@ spec:
                         // better to autodelete the deployment when it times out
                         ciDeleteAfterTimingOut(2, 'MINUTES') {
 
-                            ciConditionalInputExecution("Deploy Gate", "Deploy ${params.project} to UAT?", "ok", "deploy2uat") {
+                            ciConditionalInputExecution("Deploy Gate",
+                                    "Deploy ${params.project} to UAT?",
+                                    "ok", "deploy2uat") {
                                 //todo deployment code missing
 
                                 //docker tag
@@ -178,7 +180,10 @@ spec:
                         // later it should be deleted manually, or with PR merge hook
                         ciDeleteAfterTimingOut(1, 'MINUTES') {
 
-                            ciConditionalInputExecution("delete feature", "delete feature deployment?", "continue", "delete deployment") {
+                            ciConditionalInputExecution("delete feature",
+                                    "delete feature deployment?",
+                                    "continue",
+                                    "delete deployment") {
                                 ciK8sDeleteBeta(params.project)
                             }
 
