@@ -56,6 +56,7 @@ spec:
         string(name: 'image', defaultValue: 'digitalinside/go-demo-3')
         string(name: 'domain', defaultValue: '10.64.108.181.nip.io')
         string(name: 'addr', defaultValue: 'go-demo-3.10.64.108.181.nip.io')
+        string(name: 'uatAddr', defaultValue: 'uat.go-demo-3.10.64.108.181.nip.io')
         string(name: 'cmAddr', defaultValue: 'cm.4.10.64.108.181.nip.io')
         string(name: 'chartVer', defaultValue: '0.0.1')
 
@@ -137,7 +138,6 @@ spec:
                             ciConditionalInputExecution("Deploy Gate",
                                     "Deploy ${params.project} to UAT?",
                                     "ok", "deploy2uat") {
-                                //todo deployment code missing
 
                                 //docker tag
                                 container('docker') {
@@ -156,6 +156,21 @@ spec:
                                     withCredentials([string(credentialsId: params.githubToken, variable: 'TOKEN')]) {
                                         sh "gren release --token=${TOKEN}"
                                     }
+                                }
+
+//                              container("helm") {
+//                                  k8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr)
+//                              }
+
+
+                                container("helm") {
+                                    ciK8sUpgrade(props.project, params.uatAddr, "${project}-uat", env.BUILD_TAG)
+                                }
+                                container("kubectl") {
+                                    ciK8sRollout(params.project, "${project}-uat")
+                                }
+                                container("golang") {
+                                    k8sProdTestGolang(params.uatAddr)
                                 }
                             }
 
@@ -194,16 +209,6 @@ spec:
 //todo
 //                        ######### untested for now  #########
 
-//                        container("helm") {
-//                            k8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr)
-//                        }
-//                        container("helm") {
-//                            ciK8sUpgrade(props.project, props.addr, "${project}-uat")
-//                        }
-//                        container("kubectl") {
-//                            ciK8sRollout(props.project, "${project}-uat")
-//                        }
-//                        container("golang") {
-//                            k8sUatTestGolang(props.addr)
-//                        }
+
+
 //                       ##################
