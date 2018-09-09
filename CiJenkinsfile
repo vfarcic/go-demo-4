@@ -113,7 +113,7 @@ spec:
         }
 
 
-        stage("Release & Deploy") {
+        stage("Release") {
             when {
                 anyOf {
                     branch "master"
@@ -134,7 +134,7 @@ spec:
                         // better to autodelete the deployment when it times out
                         ciDeleteAfterTimingOut(10, 'MINUTES') {
 
-                            ciConditionalInputExecution("Deploy Gate",
+                            ciConditionalInputExecution("Release Gate",
                                     "Release ${params.project} ?",
                                     "ok", "release") {
                                 //docker tag
