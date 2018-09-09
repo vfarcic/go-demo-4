@@ -1,6 +1,6 @@
 version: 1.0.0
 services:
-  - name: go-demo-3
+  - name: go-demo-4
     envs:
       - go-demo-3-uat
       - go-demo-3-prod
