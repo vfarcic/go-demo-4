@@ -1,0 +1,8 @@
+version: 1.0.0
+services:
+  - name: go-demo-4
+    envs:
+      - name: go-demo-3-uat
+        addr: uat.go-demo-3.192.168.0.10.nip.io
+      - name: go-demo-3-prod
+        addr: go-demo-3.192.168.0.10.nip.io

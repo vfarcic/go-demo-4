@@ -1,0 +1,150 @@
+pipeline {
+    agent {
+        kubernetes {
+            label "builder-pod-${UUID.randomUUID().toString()}"
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: builder-pod
+spec:
+  containers:
+  - name: helm
+    image: vfarcic/helm:2.8.2
+    command:
+    - cat
+    tty: true
+  - name: jq
+    image: gempesaw/curl-jq 
+    command:
+    - cat
+    tty: true
+  - name: kubectl
+    image: vfarcic/kubectl
+    command: ["cat"]
+    tty: true
+"""
+        }
+    }
+
+    environment {
+        uatAddr = "uat.go-demo-3.10.64.108.181.nip.io"
+    }
+
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 45, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Project') {
+            steps {
+                showProject()
+            }
+        }
+
+        stage("Version") {
+            steps {
+                container ("jq") {
+                    showVersion()
+                }
+            }
+        }
+
+
+        stage("Environment") {
+            steps {
+                showEnvironment()
+            }
+
+        }
+
+        stage("Deploy") {
+            steps {
+                container("helm") {
+                    ciK8sUpgrade(env.project, getAddr(), env.environment, env.projectVersion)
+                }
+                container("kubectl") {
+                    ciK8sRollout(env.project, env.environment)
+                }
+            }
+        }
+
+        stage("Test") {
+            steps {
+                container("golang") {
+                    k8sProdTestGolang(getAddr())
+                }
+            }
+        }
+    }
+
+}
+
+
+def getAddr() {
+    getEnvByName(env.project, env.environment).addr
+}
+
+def getProjectByName(n) {
+    def dpl = readYaml file: 'platform_deployment.yml'
+    for (s in dpl.services) {
+        if (s.name == n) {
+            println s
+            return s
+        }
+    }
+}
+
+def getEnvByName(project, envName) {
+    println project
+    println envName
+    for (e in getProjectByName(project).envs) {
+        println e
+        if (e.name == envName) {
+            return e
+        }
+    }
+}
+
+def showProject() {
+    def deployment = readYaml file: "platform_deployment.yml"
+    def projectChoices = ''
+    deployment.services.each {
+        projectChoices += it.name + '\n'
+    }
+
+    env.project = input( id: 'projectInput',
+            message: 'Choose properties file',
+            parameters: [ [$class: 'ChoiceParameterDefinition',
+                           choices: projectChoices,
+                           description: 'What service to deploy?',
+                           name: 'project'] ])
+}
+
+def showVersion() {
+    def projectVersions = sh(
+            script: """  curl  https://api.github.com/repos/tigran10/${env.project}/releases | jq -r ".[].tag_name" """,
+            returnStdout: true).trim()
+
+    env.projectVersion = input( id: 'versionInput',
+            message: 'Choose version',
+            parameters: [ [$class: 'ChoiceParameterDefinition',
+                           choices: projectVersions,
+                           description: 'What version to deploy?',
+                           name: 'version'] ])
+}
+
+def showEnvironment() {
+    def envs = getProjectByName(env.project).envs.name
+    env.environment = input( id: 'envInput',
+            message: 'Choose environment',
+            parameters: [ [$class: 'ChoiceParameterDefinition',
+                           choices: envs,
+                           description: 'Where to deploy?',
+                           name: 'env'] ])
+}
