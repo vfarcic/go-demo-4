@@ -54,11 +54,10 @@ spec:
     parameters {
         string(name: 'project', defaultValue: 'go-demo-3')
         string(name: 'image', defaultValue: 'digitalinside/go-demo-3')
-        string(name: 'domain', defaultValue: '10.64.108.181.nip.io')
-        string(name: 'addr', defaultValue: 'go-demo-3.10.64.108.181.nip.io')
-        string(name: 'uatAddr', defaultValue: 'uat.go-demo-3.10.64.108.181.nip.io')
-        string(name: 'cmAddr', defaultValue: 'cm.4.10.64.108.181.nip.io')
-        string(name: 'chartVer', defaultValue: '0.0.1')
+        string(name: 'domain', defaultValue: '192.168.0.10.nip.io')
+        string(name: 'addr', defaultValue: 'go-demo-3.192.168.0.10.nip.io')
+        string(name: 'uatAddr', defaultValue: 'uat.go-demo-3.192.168.0.10.nip.io')
+        string(name: 'cmAddr', defaultValue: 'cm.4.192.168.0.10.nip.io')
 
         // new
         string(name: 'rsaKey', defaultValue: 'TM_RSA')
@@ -161,7 +160,6 @@ spec:
                                     ciK8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr)
                                 }
                             }
-
 
                         }
                     }
