@@ -57,8 +57,11 @@ spec:
         stage("Version") {
             steps {
                 container("helm") {
-                    projectVersions = sh(script: """  curl  https://api.github.com/repos/tigran10/go-demo-4/releases | jq -r ".[].tag_name" """, returnStdout: true).trim()
-                    def projectVersion = choice(name: 'PROJECT_VERSION', choices: ${projectVersions}, description: 'What version ?')
+                    script {
+                        projectVersions = sh(script: """  curl  https://api.github.com/repos/tigran10/go-demo-4/releases | jq -r ".[].tag_name" """, returnStdout: true).trim()
+                        def projectVersion = choice(name: 'PROJECT_VERSION', choices: ${projectVersions}, description: 'What version ?')
+                    }
+
                 }
             }
         }
@@ -82,10 +85,10 @@ spec:
 
 
 def projects = ["go-demo-3":
-                    [ envs: [ build: "go-demo-3-build",
-                              uat: "go-demo-uat",
-                              prod: "go-demo-3-prod"
-                             ]
-                    ]
+                        [ envs: [ build: "go-demo-3-build",
+                                  uat: "go-demo-uat",
+                                  prod: "go-demo-3-prod"
+                        ]
+                        ]
 ]
 
