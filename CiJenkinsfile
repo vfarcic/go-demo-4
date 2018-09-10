@@ -157,7 +157,7 @@ spec:
                                 }
 
                                 container("helm") {
-                                    ciK8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr)
+                                    ciK8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr, true)
                                 }
                             }
 
