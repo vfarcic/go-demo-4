@@ -147,8 +147,9 @@ def showProject() {
 
 def showVersion() {
     def projectVersions = sh(
-            script: """  curl  https://api.github.com/repos/tigran10/go-demo-4/releases | jq -r ".[].tag_name" """,
-            returnStdout: true).trim()
+    //tigran10/go-demo-4 should be changed
+    script: """  curl  https://api.github.com/repos/tigran10/go-demo-4/releases | jq -r ".[].tag_name" """,
+    returnStdout: true).trim()
 
     env.projectVersion = input(id: 'versionInput',
             message: 'Choose version',
