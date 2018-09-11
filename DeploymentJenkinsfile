@@ -29,9 +29,6 @@ spec:
         }
     }
 
-    environment {
-        uatAddr = "uat.go-demo-3.10.64.108.181.nip.io"
-    }
 
 
     options {
