@@ -99,17 +99,13 @@ def getProjectByName(n) {
     def dpl = readYaml file: 'platform_deployment.yml'
     for (s in dpl.services) {
         if (s.name == n) {
-            println s
             return s
         }
     }
 }
 
 def getEnvByName(project, envName) {
-    println project
-    println envName
     for (e in getProjectByName(project).envs) {
-        println e
         if (e.name == envName) {
             return e
         }
