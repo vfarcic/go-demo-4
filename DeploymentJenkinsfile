@@ -12,7 +12,7 @@ metadata:
 spec:
   containers:
   - name: helm
-    image: vfarcic/helm:2.8.2
+    image: vfarcic/helm:2.9.1
     command:
     - cat
     tty: true
@@ -29,7 +29,9 @@ spec:
         }
     }
 
-
+    parameters {
+        string(name: 'cmAddr', defaultValue: 'cm.192.168.0.10.nip.io')
+    }
 
     options {
         disableConcurrentBuilds()
@@ -46,7 +48,7 @@ spec:
 
         stage("Version") {
             steps {
-                container ("jq") {
+                container("jq") {
                     showVersion()
                 }
             }
@@ -63,15 +65,10 @@ spec:
         stage("Deploy") {
             steps {
                 container("helm") {
-
-                    sh """helm upgrade go-demo-3 \
-                            --version ${env.projectVersion} \
-                            --tiller-namespace ${project}-build \
-                            --namespace ${env.environment} \
-                            --set ingress.host=${getAddr()} \
-                            --reuse-values"""
-
+                    addChartmuseum()
+                    installChart()
                 }
+
                 container("kubectl") {
                     ciK8sRollout(env.project, env.environment)
                 }
@@ -90,6 +87,27 @@ spec:
 
 }
 
+
+def installChart() {
+    sh """helm install chartmuseum/${env.project} \
+                            --version ${env.projectVersion} \
+                            --tiller-namespace ${project}-build \
+                            --namespace ${env.environment} \
+                            --set ingress.host=${getAddr()} """
+}
+
+def addChartmuseum() {
+    withCredentials([usernamePassword(
+            credentialsId: "chartmuseum",
+            usernameVariable: "USER", passwordVariable: "PASS")]) {
+
+        sh """helm repo add chartmuseum \
+                                http://${params.cmAddr} \
+                                --username ${USER} \
+                                --password ${PASS}
+                           """
+    }
+}
 
 def getAddr() {
     getEnvByName(env.project, env.environment).addr
@@ -119,12 +137,12 @@ def showProject() {
         projectChoices += it.name + '\n'
     }
 
-    env.project = input( id: 'projectInput',
+    env.project = input(id: 'projectInput',
             message: 'Choose properties file',
-            parameters: [ [$class: 'ChoiceParameterDefinition',
-                           choices: projectChoices,
-                           description: 'What service to deploy?',
-                           name: 'project'] ])
+            parameters: [[$class     : 'ChoiceParameterDefinition',
+                          choices    : projectChoices,
+                          description: 'What service to deploy?',
+                          name       : 'project']])
 }
 
 def showVersion() {
@@ -132,20 +150,20 @@ def showVersion() {
             script: """  curl  https://api.github.com/repos/tigran10/go-demo-4/releases | jq -r ".[].tag_name" """,
             returnStdout: true).trim()
 
-    env.projectVersion = input( id: 'versionInput',
+    env.projectVersion = input(id: 'versionInput',
             message: 'Choose version',
-            parameters: [ [$class: 'ChoiceParameterDefinition',
-                           choices: projectVersions,
-                           description: 'What version to deploy?',
-                           name: 'version'] ])
+            parameters: [[$class     : 'ChoiceParameterDefinition',
+                          choices    : projectVersions,
+                          description: 'What version to deploy?',
+                          name       : 'version']])
 }
 
 def showEnvironment() {
     def envs = getProjectByName(env.project).envs.name
-    env.environment = input( id: 'envInput',
+    env.environment = input(id: 'envInput',
             message: 'Choose environment',
-            parameters: [ [$class: 'ChoiceParameterDefinition',
-                           choices: envs,
-                           description: 'Where to deploy?',
-                           name: 'env'] ])
+            parameters: [[$class     : 'ChoiceParameterDefinition',
+                          choices    : envs,
+                          description: 'Where to deploy?',
+                          name       : 'env']])
 }
