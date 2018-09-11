@@ -67,7 +67,7 @@ spec:
                     sh """helm upgrade go-demo-3 \
                             --version ${env.projectVersion} \
                             --tiller-namespace ${project}-build \
-                            --namespace ${namespace} \
+                            --namespace ${env.environment} \
                             --set ingress.host=${getAddr()} \
                             --reuse-values"""
 
