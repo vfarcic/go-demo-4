@@ -52,11 +52,11 @@ spec:
     }
 
     parameters {
-        string(name: 'project', defaultValue: 'go-demo-3')
-        string(name: 'image', defaultValue: 'digitalinside/go-demo-3')
+        string(name: 'project', defaultValue: 'go-demo-4')
+        string(name: 'image', defaultValue: 'digitalinside/go-demo-4')
         string(name: 'domain', defaultValue: '192.168.0.10.nip.io')
-        string(name: 'addr', defaultValue: 'go-demo-3.192.168.0.10.nip.io')
-        string(name: 'uatAddr', defaultValue: 'uat.go-demo-3.192.168.0.10.nip.io')
+        string(name: 'addr', defaultValue: 'go-demo-4.192.168.0.10.nip.io')
+        string(name: 'uatAddr', defaultValue: 'uat.go-demo-4.192.168.0.10.nip.io')
         string(name: 'cmAddr', defaultValue: 'cm.192.168.0.10.nip.io')
 
         // new
