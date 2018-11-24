@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: cd
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
 spec:
   containers:
   - name: docker
