@@ -1,0 +1,170 @@
+pipeline {
+    agent {
+        kubernetes {
+            label "builder-pod-${UUID.randomUUID().toString()}"
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: builder-pod
+spec:
+  containers:
+  - name: helm
+    image: vfarcic/helm:2.9.1
+    command:
+    - cat
+    tty: true
+  - name: jq
+    image: gempesaw/curl-jq 
+    command:
+    - cat
+    tty: true
+  - name: kubectl
+    image: vfarcic/kubectl
+    command: ["cat"]
+    tty: true
+"""
+        }
+    }
+
+    parameters {
+        string(name: 'cmAddr', defaultValue: 'cm.192.168.0.10.nip.io')
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 45, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Project') {
+            steps {
+                showProject()
+            }
+        }
+
+        stage("Version") {
+            steps {
+                container("jq") {
+                    showVersion()
+                }
+            }
+        }
+
+
+        stage("Environment") {
+            steps {
+                showEnvironment()
+            }
+
+        }
+
+        stage("Deploy") {
+            steps {
+                container("helm") {
+                    addChartmuseum()
+                    installChart()
+                }
+
+                container("kubectl") {
+                    ciK8sRollout(env.project, env.environment)
+                }
+            }
+        }
+
+        stage("Test") {
+            steps {
+                container("golang") {
+//                    k8sProdTestGolang(getAddr())
+                    echo "test"
+                }
+            }
+        }
+    }
+
+}
+
+
+def installChart() {
+    sh """helm install chartmuseum/${env.project} \
+                            --version ${env.projectVersion} \
+                            --tiller-namespace ${project}-build \
+                            --namespace ${env.environment} \
+                            --set ingress.host=${getAddr()} """
+}
+
+def addChartmuseum() {
+    withCredentials([usernamePassword(
+            credentialsId: "chartmuseum",
+            usernameVariable: "USER", passwordVariable: "PASS")]) {
+
+        sh """helm repo add chartmuseum \
+                                http://${params.cmAddr} \
+                                --username ${USER} \
+                                --password ${PASS}
+                           """
+    }
+}
+
+def getAddr() {
+    getEnvByName(env.project, env.environment).addr
+}
+
+def getProjectByName(n) {
+    def dpl = readYaml file: 'platform_deployment.yml'
+    for (s in dpl.services) {
+        if (s.name == n) {
+            return s
+        }
+    }
+}
+
+def getEnvByName(project, envName) {
+    for (e in getProjectByName(project).envs) {
+        if (e.name == envName) {
+            return e
+        }
+    }
+}
+
+def showProject() {
+    def deployment = readYaml file: "platform_deployment.yml"
+    def projectChoices = ''
+    deployment.services.each {
+        projectChoices += it.name + '\n'
+    }
+
+    env.project = input(id: 'projectInput',
+            message: 'Choose properties file',
+            parameters: [[$class     : 'ChoiceParameterDefinition',
+                          choices    : projectChoices,
+                          description: 'What service to deploy?',
+                          name       : 'project']])
+}
+
+def showVersion() {
+    def projectVersions = sh(
+    //tigran10/go-demo-4 should be changed
+    script: """  curl  https://api.github.com/repos/tigran10/go-demo-4/releases | jq -r ".[].tag_name" """,
+    returnStdout: true).trim()
+
+    env.projectVersion = input(id: 'versionInput',
+            message: 'Choose version',
+            parameters: [[$class     : 'ChoiceParameterDefinition',
+                          choices    : projectVersions,
+                          description: 'What version to deploy?',
+                          name       : 'version']])
+}
+
+def showEnvironment() {
+    def envs = getProjectByName(env.project).envs.name
+    env.environment = input(id: 'envInput',
+            message: 'Choose environment',
+            parameters: [[$class     : 'ChoiceParameterDefinition',
+                          choices    : envs,
+                          description: 'Where to deploy?',
+                          name       : 'env']])
+}
