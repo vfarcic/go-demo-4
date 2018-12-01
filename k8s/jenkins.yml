@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: jenkins-role-binding
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
   labels:
     app: jenkins
 roleRef:

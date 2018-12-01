@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: go-demo-3-build
+  name: go-demo-4-build
 
 ---
 
@@ -9,7 +9,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: build
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
 
 ---
 
@@ -17,7 +17,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
   name: build
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -32,7 +32,7 @@ apiVersion: v1
 kind: LimitRange
 metadata:
   name: build
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
 spec:
   limits:
   - default:
@@ -55,7 +55,7 @@ apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: build
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
 spec:
   hard:
     requests.cpu: 2
@@ -69,7 +69,7 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: go-demo-3
+  name: go-demo-4
 
 ---
 
@@ -77,7 +77,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
   name: build
-  namespace: go-demo-3
+  namespace: go-demo-4
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -85,7 +85,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: build
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
 
 ---
 
@@ -93,7 +93,7 @@ apiVersion: v1
 kind: LimitRange
 metadata:
   name: build
-  namespace: go-demo-3
+  namespace: go-demo-4
 spec:
   limits:
   - default:
@@ -116,7 +116,7 @@ apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: build
-  namespace: go-demo-3
+  namespace: go-demo-4
 spec:
   hard:
     requests.cpu: 2
@@ -130,7 +130,7 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: go-demo-3-jenkins
+  name: go-demo-4-jenkins
 
 ---
 
@@ -138,7 +138,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: jenkins-role-binding
-  namespace: go-demo-3-build
+  namespace: go-demo-4-build
   labels:
     app: jenkins
 roleRef:
@@ -148,4 +148,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: jenkins
-  namespace: go-demo-3-jenkins
+  namespace: go-demo-4-jenkins

@@ -3,50 +3,28 @@ pipeline {
         kubernetes {
             label "builder-pod-${UUID.randomUUID().toString()}"
             defaultContainer 'jnlp'
-            yaml """
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    some-label: builder-pod
-spec:
-  containers:
-  - name: helm
-    image: vfarcic/helm:2.9.1
-    command:
-    - cat
-    tty: true
-  - name: jq
-    image: gempesaw/curl-jq 
-    command:
-    - cat
-    tty: true
-  - name: kubectl
-    image: vfarcic/kubectl
-    command: ["cat"]
-    tty: true
-"""
+            yamlFile "DeploymentKubernetesPod.yaml"
         }
     }
 
-    parameters {
-        string(name: 'cmAddr', defaultValue: 'cm.192.168.0.10.nip.io')
+    environment {
+        cmAddr = "cm.acme.com"
     }
 
     options {
+        buildDiscarder logRotator(numToKeepStr: '5')
         disableConcurrentBuilds()
-        timeout(time: 45, unit: 'MINUTES')
     }
 
     stages {
 
-        stage('Project') {
+        stage('Select Project') {
             steps {
                 showProject()
             }
         }
 
-        stage("Version") {
+        stage("Select Version") {
             steps {
                 container("jq") {
                     showVersion()
@@ -55,7 +33,7 @@ spec:
         }
 
 
-        stage("Environment") {
+        stage("Select Environment") {
             steps {
                 showEnvironment()
             }
@@ -78,8 +56,7 @@ spec:
         stage("Test") {
             steps {
                 container("golang") {
-//                    k8sProdTestGolang(getAddr())
-                    echo "test"
+                    k8sProdTestGolang(getAddr())
                 }
             }
         }
@@ -102,7 +79,7 @@ def addChartmuseum() {
             usernameVariable: "USER", passwordVariable: "PASS")]) {
 
         sh """helm repo add chartmuseum \
-                                http://${params.cmAddr} \
+                                http://${env.cmAddr} \
                                 --username ${USER} \
                                 --password ${PASS}
                            """
@@ -147,8 +124,7 @@ def showProject() {
 
 def showVersion() {
     def projectVersions = sh(
-    //tigran10/go-demo-4 should be changed
-    script: """  curl  https://api.github.com/repos/tigran10/go-demo-4/releases | jq -r ".[].tag_name" """,
+    script: """  curl  https://api.github.com/repos/vfarcic/${env.project}/releases | jq -r ".[].tag_name" """,
     returnStdout: true).trim()
 
     env.projectVersion = input(id: 'versionInput',
