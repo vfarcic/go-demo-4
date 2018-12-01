@@ -2,87 +2,43 @@ pipeline {
     agent {
         kubernetes {
             label "builder-pod-${UUID.randomUUID().toString()}"
+            cloud "go-demo-4-build"
             defaultContainer 'jnlp'
-            yaml """
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    some-label: builder-pod
-spec:
-  containers:
-  - name: helm
-    image: vfarcic/helm:2.9.1
-    command:
-    - cat
-    tty: true
-  - name: golang
-    image: golang:1.9
-    command: ["cat"]
-    tty: true
-  - name: git
-    image: alpine/git
-    command:
-    - cat
-    tty: true
-  - name: gren
-    image: digitalinside/gren:latest
-    command:
-    - cat
-    tty: true    
-  - name: kubectl
-    image: vfarcic/kubectl
-    command: ["cat"]
-    tty: true
-  - name: docker
-    image: docker
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-sock-volume
-  volumes:
-  - name: docker-sock-volume
-    hostPath:
-      path: /var/run/docker.sock
-      type: File
-"""
+            serviceAccount "build"
+            yamlFile "CiKubernetesPod.yaml"
         }
     }
 
-    parameters {
-        string(name: 'project', defaultValue: 'go-demo-4')
-        string(name: 'image', defaultValue: 'digitalinside/go-demo-4')
-        string(name: 'domain', defaultValue: '192.168.0.10.nip.io')
-        string(name: 'addr', defaultValue: 'go-demo-4.192.168.0.10.nip.io')
-        string(name: 'uatAddr', defaultValue: 'uat.go-demo-4.192.168.0.10.nip.io')
-        string(name: 'cmAddr', defaultValue: 'cm.192.168.0.10.nip.io')
+    environment {
+        project="go-demo-4"
+        image="digitalinside/go-demo-4"
+        
+        domain = "192.168.0.21.nip.io"
+        cmAddr = "cm.192.168.0.21.nip.io"
 
-        // new
-        string(name: 'rsaKey', defaultValue: 'TM_RSA')
-        string(name: 'githubToken', defaultValue: 'GITHUB_TOKEN')
+        rsaKey="go-demo-rsa-key"
+        githubToken="GITHUB_TOKEN"
     }
 
+
     options {
+        buildDiscarder logRotator(numToKeepStr: '5')
         disableConcurrentBuilds()
-        timeout(time: 45, unit: 'MINUTES')
     }
 
     stages {
-
         stage('build') {
             steps {
                 ciPrettyBuildNumber()
 
                 container('git') {
-                    ciWithGitKey(params.rsaKey) {
-                        ciBuildEnvVars()
+                    ciWithGitKey(params.rsaKey) {                        
+                        // publish env vars
+                        ciBuildEnvVars() 
                     }
                 }
 
                 container('docker') {
-                    //for feature branch
                     ciK8sBuildImage(params.image, false, env.BUILD_TAG)
                 }
             }
@@ -130,16 +86,15 @@ spec:
                     }
 
                     container("helm") {
-                        // you can have your master builds running for some time until someone decides to promote it.
-                        // better to autodelete the deployment when it times out
-                        ciDeleteAfterTimingOut(10, 'MINUTES') {
-
-                            ciConditionalInputExecution("Release Gate",
-                                    "Release ${params.project} ?",
-                                    "ok", "release") {
+                        ciContinueAfterTimeout(5, 'MINUTES') {
+                            ciConditionalInputExecution(
+                                    id: "Release Gate",
+                                    message: "Release ${params.project} ?",
+                                    ok: "ok",
+                                    name: "release") {
                                 //docker tag
                                 container('docker') {
-                                    ciRetag(env.BUILD_TAG, false, ["latest", "${env.shortGitCommit}", env.RELEASE_TAG])
+                                    ciRetag(env.BUILD_TAG, false, ["latest", env.shortGitCommit, env.RELEASE_TAG])
                                 }
 
                                 //git tag
@@ -160,8 +115,8 @@ spec:
                                     ciK8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr, true)
                                 }
                             }
-
                         }
+                    
                     }
 
                 }
@@ -173,18 +128,7 @@ spec:
         always {
             ciWhenNotReleaseBranches {
                 container("helm") {
-                    // this will delete feature branch deployments, unless someone wants to keep it running
-                    // later it should be deleted manually, or with PR merge hook
-                    ciDeleteAfterTimingOut(1, 'MINUTES') {
-
-                        ciConditionalInputExecution("delete feature",
-                                "delete feature deployment?",
-                                "continue",
-                                "delete deployment") {
-                            ciK8sDeleteBeta(params.project)
-                        }
-
-                    }
+                        ciK8sDeleteBeta(params.project)                        
                 }
             }
         }
