@@ -32,8 +32,7 @@ pipeline {
                 ciPrettyBuildNumber()
 
                 container('git') {
-                    ciWithGitKey(env.rsaKey) {                        
-                        // publish env vars
+                    ciWithGitKey(env.rsaKey) {
                         ciBuildEnvVars() 
                     }
                 }
@@ -128,7 +127,7 @@ pipeline {
         always {
             ciWhenNotReleaseBranches {
                 container("helm") {
-                        ciK8sDeleteBeta(env.project)                        
+                        ciK8sDeleteBeta(env.project)
                 }
             }
         }

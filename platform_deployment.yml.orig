@@ -3,6 +3,6 @@ services:
   - name: go-demo-4
     envs:
       - name: go-demo-4-uat
-        addr: uat.go-demo-4.192.168.0.21.nip.io
+        addr: uat.go-demo-4.acme.com.nip.io
       - name: go-demo-4-prod
-        addr: go-demo-4.192.168.0.21.nip.io
+        addr: go-demo-4.acme.com.nip.io

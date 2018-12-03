@@ -82,7 +82,7 @@ def addChartmuseum() {
 def installChart() {
     sh """helm install chartmuseum/${env.project} \
                             --version ${env.projectVersion} \
-                            --tiller-namespace ${env.environment} \
+                            --tiller-namespace ${project}-build \
                             --namespace ${env.environment} \
                             --set ingress.host=${getAddr()} """
 }
