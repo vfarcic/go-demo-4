@@ -80,7 +80,7 @@ def addChartmuseum() {
 }
 
 def installChart() {
-    sh """helm install chartmuseum/${env.project} \
+    sh """helm upgrade -i ${env.project} chartmuseum/${env.project} \
                             --version ${env.projectVersion} \
                             --tiller-namespace ${env.environment} \
                             --namespace ${env.environment} \
