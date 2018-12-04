@@ -9,7 +9,7 @@ pipeline {
     }
 
     environment {
-        cmAddr = "cm.192.168.0.21.nip.io"
+        cmAddr = "cm.acme.com"
     }
 
     options {
@@ -125,7 +125,7 @@ def showProject() {
 
 def showVersion() {
     def projectVersions = sh(
-    script: """  curl  https://api.github.com/repos/tigran10/${env.project}/releases | jq -r ".[].tag_name" """,
+    script: """  curl  https://api.github.com/repos/vfarcic/${env.project}/releases | jq -r ".[].tag_name" """,
     returnStdout: true).trim()
 
     env.projectVersion = input(id: 'versionInput',
