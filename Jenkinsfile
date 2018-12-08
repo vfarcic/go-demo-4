@@ -5,16 +5,15 @@ pipeline {
             cloud "go-demo-4-build"
             defaultContainer 'jnlp'
             serviceAccount "build"
-            yamlFile "CiKubernetesPod.yaml"
+            yamlFile "KubernetesPod.yaml"
         }
     }
 
     environment {
         project="go-demo-4"
-        image="digitalinside/go-demo-4"
-        
-        domain = "192.168.0.21.nip.io"
-        cmAddr = "cm.192.168.0.21.nip.io"
+        image="vfarcic/go-demo-4"
+        domain = "acme.com"
+        cmAddr = "cm.acme.com"
 
         rsaKey="go-demo-rsa-key"
         githubToken="github_token"
@@ -113,7 +112,7 @@ pipeline {
                                 }
                             }
                         }
-                    
+
                     }
 
                 }
@@ -125,7 +124,7 @@ pipeline {
         always {
             ciWhenNotReleaseBranches {
                 container("helm") {
-                        ciK8sDeleteBeta(env.project)
+                    ciK8sDeleteBeta(env.project)
                 }
             }
         }

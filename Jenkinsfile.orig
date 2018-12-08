@@ -5,7 +5,7 @@ pipeline {
             cloud "go-demo-4-build"
             defaultContainer 'jnlp'
             serviceAccount "build"
-            yamlFile "CiKubernetesPod.yaml"
+            yamlFile "KubernetesPod.yaml"
         }
     }
 
