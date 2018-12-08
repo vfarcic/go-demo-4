@@ -2,6 +2,7 @@ pipeline {
     agent {
         kubernetes {
             label "builder-pod-${UUID.randomUUID().toString()}"
+            cloud "go-demo-4-build"
             defaultContainer 'jnlp'
             serviceAccount "build"
             yamlFile "CiKubernetesPod.yaml"
@@ -10,12 +11,13 @@ pipeline {
 
     environment {
         project="go-demo-4"
-        image="vfarcic/go-demo-4"
-        domain = "acme.com"
-        cmAddr = "cm.acme.com"
+        image="digitalinside/go-demo-4"
+        
+        domain = "192.168.0.21.nip.io"
+        cmAddr = "cm.192.168.0.21.nip.io"
 
         rsaKey="go-demo-rsa-key"
-        githubToken="GITHUB_TOKEN"
+        githubToken="github_token"
     }
 
 
@@ -30,14 +32,11 @@ pipeline {
                 ciPrettyBuildNumber()
 
                 container('git') {
-                    ciWithGitKey(params.rsaKey) {                        
-                        // publish env vars
-                        ciBuildEnvVars() 
-                    }
+                    ciBuildEnvVars()
                 }
 
                 container('docker') {
-                    ciK8sBuildImage(params.image, false, env.BUILD_TAG)
+                    ciK8sBuildImage(env.image, false, env.BUILD_TAG)
                 }
             }
         }
@@ -45,22 +44,22 @@ pipeline {
         stage("func-test") {
             steps {
                 container("helm") {
-                    ciK8sUpgradeBeta(params.project, params.domain, env.BUILD_TAG)
+                    ciK8sUpgradeBeta(env.project, env.domain, env.BUILD_TAG)
                 }
 
                 container("kubectl") {
-                    ciK8sRolloutBeta(params.project)
+                    ciK8sRolloutBeta(env.project)
                 }
 
                 container("golang") {
-                    ciK8sFuncTestGolang(params.project, params.domain)
+                    ciK8sFuncTestGolang(env.project, env.domain)
                 }
             }
 
             post {
                 failure {
                     container("helm") {
-                        ciK8sDeleteBeta(params.project)
+                        ciK8sDeleteBeta(env.project)
                     }
                 }
             }
@@ -78,19 +77,16 @@ pipeline {
             steps {
                 script {
                     container("git") {
-                        ciWithGitKey(params.rsaKey) {
+                        ciWithGitKey(env.rsaKey) {
                             env.RELEASE_TAG = ciSuggestVersion(ciVersionRead())
                         }
                     }
 
                     container("helm") {
-                        // you can have your master builds running for some time until someone decides to promote it.
-                        // better to autodelete the deployment when it times out
-                        
                         ciContinueAfterTimeout(5, 'MINUTES') {
                             ciConditionalInputExecution(
                                     id: "Release Gate",
-                                    message: "Release ${params.project} ?",
+                                    message: "Release ${env.project} ?",
                                     ok: "ok",
                                     name: "release") {
                                 //docker tag
@@ -100,20 +96,20 @@ pipeline {
 
                                 //git tag
                                 container('git') {
-                                    ciWithGitKey(params.rsaKey) {
+                                    ciWithGitKey(env.rsaKey) {
                                         ciTagGitRelease(tag: env.RELEASE_TAG)
                                     }
                                 }
 
                                 container('gren') {
                                     //https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
-                                    withCredentials([string(credentialsId: params.githubToken, variable: 'TOKEN')]) {
+                                    withCredentials([string(credentialsId: env.githubToken, variable: 'TOKEN')]) {
                                         sh "gren release --token=${TOKEN}"
                                     }
                                 }
 
                                 container("helm") {
-                                    ciK8sPushHelm(params.project, env.RELEASE_TAG, params.cmAddr, true)
+                                    ciK8sPushHelm(env.project, env.RELEASE_TAG, env.cmAddr, true)
                                 }
                             }
                         }
@@ -129,7 +125,7 @@ pipeline {
         always {
             ciWhenNotReleaseBranches {
                 container("helm") {
-                        ciK8sDeleteBeta(params.project)                        
+                        ciK8sDeleteBeta(env.project)
                 }
             }
         }
