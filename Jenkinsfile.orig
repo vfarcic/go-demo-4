@@ -90,7 +90,7 @@ pipeline {
                                     name: "release") {
                                 //docker tag
                                 container('docker') {
-                                    ciRetag(env.BUILD_TAG, false, ["latest", env.shortGitCommit, env.RELEASE_TAG])
+                                    ciRetag(env.BUILD_TAG, false, ["latest", env.SHORT_GIT_COMMIT, env.RELEASE_TAG])
                                 }
 
                                 //git tag
