@@ -5,7 +5,7 @@ pipeline {
             cloud "go-demo-4-build"
             defaultContainer 'jnlp'
             serviceAccount "build"
-            yamlFile "CiKubernetesPod.yaml"
+            yamlFile "KubernetesPod.yaml"
         }
     }
 
@@ -16,7 +16,7 @@ pipeline {
         cmAddr = "cm.acme.com"
 
         rsaKey="go-demo-rsa-key"
-        githubToken="GITHUB_TOKEN"
+        githubToken="github_token"
     }
 
 
@@ -31,9 +31,7 @@ pipeline {
                 ciPrettyBuildNumber()
 
                 container('git') {
-                    ciWithGitKey(env.rsaKey) {
-                        ciBuildEnvVars()
-                    }
+                    ciBuildEnvVars()
                 }
 
                 container('docker') {
@@ -92,7 +90,7 @@ pipeline {
                                     name: "release") {
                                 //docker tag
                                 container('docker') {
-                                    ciRetag(env.BUILD_TAG, false, ["latest", env.shortGitCommit, env.RELEASE_TAG])
+                                    ciRetag(env.BUILD_TAG, false, ["latest", env.SHORT_GIT_COMMIT, env.RELEASE_TAG])
                                 }
 
                                 //git tag
